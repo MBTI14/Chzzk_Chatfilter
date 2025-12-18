@@ -3,25 +3,23 @@
     const SEL = {
         item: '[class*="live_chatting_list_item"], [class*="vod_chatting_item"]',
         text: '[class*="live_chatting_message_text"]',
-        nickname: '[class*="name_text"]', // 닉네임 클래스 (추가됨)
+        nickname: '[class*="name_text"]',
         image: 'img',
         btn: 'button[class*="live_chatting_power_button"]',
         container: '[class*="live_chatting_content"], [class*="vod_chatting_list"], [class*="live_chatting_list_wrapper"]'
     };
     
     let currentKeywords = [], isEnabled = true, isReady = false;
-    let lastRightClickedNode = null; // 방금 우클릭한 채팅을 저장할 변수
+    let lastRightClickedNode = null;
 
-    // 0. 우클릭 대상 추적 (새로 추가됨)
+    // 0. 우클릭 대상 추적
     document.addEventListener('contextmenu', (e) => {
-        // 우클릭한 요소에서 가장 가까운 채팅 덩어리(item)를 찾아서 저장
         lastRightClickedNode = e.target.closest(SEL.item);
     }, true);
 
-    // 0. Background에서 온 명령 받기 (새로 추가됨)
+    // 0. Background 명령 수신
     chrome.runtime.onMessage.addListener((request) => {
         if (request.action === "BLOCK_LAST_CLICKED_USER" && lastRightClickedNode) {
-            // 저장해둔 채팅에서 닉네임 찾기
             const nameNode = lastRightClickedNode.querySelector(SEL.nickname);
             if (nameNode) {
                 const username = nameNode.textContent.trim();
@@ -35,7 +33,6 @@
         }
     });
 
-    // 저장소에 키워드 추가하는 헬퍼 함수
     function addKeywordToStorage(keyword) {
         chrome.storage.local.get(['bannedKeywords'], (data) => {
             const keywords = data.bannedKeywords || [];
@@ -46,13 +43,24 @@
         });
     }
 
-    // --- 아래는 기존 로직 (필터링 부분만 업그레이드) ---
+    // --- 초기화 및 필터 로직 ---
 
     function initSettings() {
         chrome.storage.local.get(['isFilterEnabled', 'bannedKeywords'], (data) => {
             isEnabled = data.isFilterEnabled !== false;
-            currentKeywords = data.bannedKeywords || [];
-            if (!data.bannedKeywords) chrome.storage.local.set({ bannedKeywords: [] });
+            
+            // [변경] 기본 차단 키워드 정의
+            const defaultKeywords = ["클린봇이 부적절한 표현을 감지했습니다."];
+
+            if (!data.bannedKeywords) {
+                // 1. 처음 설치라 저장된 게 없으면 -> 기본 키워드 적용
+                currentKeywords = defaultKeywords;
+                chrome.storage.local.set({ bannedKeywords: defaultKeywords });
+            } else {
+                // 2. 이미 사용 중이면 -> 저장된 목록 사용
+                currentKeywords = data.bannedKeywords;
+            }
+
             isReady = true;
             reprocessAllChats();
         });
@@ -84,13 +92,13 @@
             const textNode = node.querySelector(SEL.text);
             if (textNode && currentKeywords.some(k => textNode.textContent.includes(k))) shouldBlock = true;
 
-            // 2. [추가됨] 닉네임 검사 (작성자 차단)
+            // 2. 닉네임 검사
             if (!shouldBlock) {
                 const nameNode = node.querySelector(SEL.nickname);
                 if (nameNode && currentKeywords.some(k => nameNode.textContent.includes(k))) shouldBlock = true;
             }
 
-            // 3. 이미지(이모티콘) 검사
+            // 3. 이미지 검사
             if (!shouldBlock && currentKeywords.length > 0) {
                 const images = node.querySelectorAll(SEL.image);
                 for (let img of images) {
@@ -101,7 +109,6 @@
                 }
             }
             
-            // 차단 실행 (완전 삭제 스타일)
             if (shouldBlock) {
                 node.style.cssText = `
                     display: none !important;
