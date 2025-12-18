@@ -2,140 +2,214 @@
     'use strict';
     const SEL = {
         item: '[class*="live_chatting_list_item"], [class*="vod_chatting_item"]',
+        guide: '[class*="live_chatting_guide_container"]',
+        fixed: '[class*="live_chatting_fixed_wrapper"]',
+        donation: '[class*="live_chatting_donation_message_container"]',
+        ranking: '[class*="live_chatting_ranking_container"]',
+        mission: '[class*="live_chatting_mission_message_wrapper"], [class*="live_chatting_fixed_mission_header"]',
         text: '[class*="live_chatting_message_text"]',
         nickname: '[class*="name_text"]',
         image: 'img',
         btn: 'button[class*="live_chatting_power_button"]',
+        badge: '[class*="badge_container"]',
         container: '[class*="live_chatting_content"], [class*="vod_chatting_list"], [class*="live_chatting_list_wrapper"]'
     };
     
-    let currentKeywords = [], isEnabled = true, isReady = false;
-    let lastRightClickedNode = null;
+    let currentKeywords = [], isEnabled = true, hideFixedMsg = false, blockDonation = false, blockRanking = false, blockMission = false, blockMethod = 'remove', isReady = false, patrolInterval = null;
 
-    // 0. 우클릭 대상 추적
-    document.addEventListener('contextmenu', (e) => {
-        lastRightClickedNode = e.target.closest(SEL.item);
-    }, true);
-
-    // 0. Background 명령 수신 (알림창 삭제됨)
-    chrome.runtime.onMessage.addListener((request) => {
-        if (request.action === "BLOCK_LAST_CLICKED_USER" && lastRightClickedNode) {
-            const nameNode = lastRightClickedNode.querySelector(SEL.nickname);
-            if (nameNode) {
-                const username = nameNode.textContent.trim();
-                if (username) {
-                    addKeywordToStorage(username);
-                    // 알림창(alert) 대신 콘솔에만 조용히 기록
-                    console.log(`[치지직 필터] 사용자 '${username}' 차단됨`);
-                }
+    document.addEventListener('click', (e) => {
+        if (!e.altKey) return;
+        if (e.target.matches(SEL.nickname)) {
+            e.preventDefault(); e.stopPropagation();
+            const username = e.target.textContent.trim();
+            if (username) addKeywordToStorage(username, null, true);
+        } else if (e.target.tagName === 'IMG') {
+            e.preventDefault(); e.stopPropagation();
+            if (e.target.closest(SEL.badge)) return;
+            const src = e.target.src;
+            if (src) {
+                let keyword = src;
+                try { keyword = src.split('/').pop().split('.')[0]; } catch (err) {}
+                addKeywordToStorage(keyword, src, false);
             }
         }
-    });
+    }, true);
 
-    function addKeywordToStorage(keyword) {
-        chrome.storage.local.get(['bannedKeywords'], (data) => {
+    function addKeywordToStorage(keyword, imageUrl, isUser) {
+        chrome.storage.local.get(['bannedKeywords', 'emoteMap', 'userMap'], (data) => {
             const keywords = data.bannedKeywords || [];
+            const emoteMap = data.emoteMap || {};
+            const userMap = data.userMap || {};
             if (!keywords.includes(keyword)) {
                 keywords.push(keyword);
-                chrome.storage.local.set({ bannedKeywords: keywords });
+                if (imageUrl) emoteMap[keyword] = imageUrl;
+                if (isUser) userMap[keyword] = true;
+                chrome.storage.local.set({ bannedKeywords: keywords, emoteMap, userMap });
             }
         });
     }
 
-    // --- 초기화 및 필터 로직 ---
-
     function initSettings() {
-        chrome.storage.local.get(['isFilterEnabled', 'bannedKeywords'], (data) => {
+        chrome.storage.local.get(['isFilterEnabled', 'hideFixedMsg', 'blockDonation', 'blockRanking', 'blockMission', 'bannedKeywords', 'blockMethod'], (data) => {
             isEnabled = data.isFilterEnabled !== false;
-            
-            // 기본 차단 키워드
-            const defaultKeywords = ["클린봇이 부적절한 표현을 감지했습니다."];
-
-            if (!data.bannedKeywords) {
-                currentKeywords = defaultKeywords;
-                chrome.storage.local.set({ bannedKeywords: defaultKeywords });
-            } else {
-                currentKeywords = data.bannedKeywords;
-            }
-
+            hideFixedMsg = data.hideFixedMsg === true;
+            blockDonation = data.blockDonation === true;
+            blockRanking = data.blockRanking === true;
+            blockMission = data.blockMission === true;
+            blockMethod = data.blockMethod || 'remove';
+            currentKeywords = data.bannedKeywords || [];
+            if (!data.bannedKeywords) chrome.storage.local.set({ bannedKeywords: [] });
             isReady = true;
             reprocessAllChats();
         });
     }
 
     chrome.storage.onChanged.addListener((changes) => {
-        let needReprocess = false;
+        let needReprocess = false, updatePatrol = false;
         if (changes.isFilterEnabled) { isEnabled = changes.isFilterEnabled.newValue; needReprocess = true; }
+        if (changes.blockDonation) { blockDonation = changes.blockDonation.newValue; needReprocess = true; }
         if (changes.bannedKeywords) { currentKeywords = changes.bannedKeywords.newValue || []; needReprocess = true; }
+        if (changes.blockMethod) { blockMethod = changes.blockMethod.newValue; needReprocess = true; }
+        if (changes.hideFixedMsg) { hideFixedMsg = changes.hideFixedMsg.newValue; updatePatrol = true; }
+        if (changes.blockRanking) { blockRanking = changes.blockRanking.newValue; updatePatrol = true; }
+        if (changes.blockMission) { blockMission = changes.blockMission.newValue; updatePatrol = true; }
+        if (updatePatrol) runPatrol();
         if (needReprocess) reprocessAllChats();
     });
 
     function reprocessAllChats() {
         if (!isReady) return;
-        document.querySelectorAll(SEL.item).forEach(node => {
+        runPatrol();
+        document.querySelectorAll(`${SEL.item}, ${SEL.guide}, ${SEL.donation}`).forEach(node => {
             delete node.dataset.processed;
-            node.style.cssText = ''; 
+            node.style.cssText = ''; node.style.display = ''; node.style.opacity = ''; node.style.height = '';
+            if(node.parentElement && node.parentElement._hiddenByExtension) {
+                node.parentElement.style.cssText = '';
+                delete node.parentElement._hiddenByExtension;
+            }
+            const textNode = node.querySelector(SEL.text);
+            if (textNode && textNode.dataset.originalText) {
+                textNode.textContent = textNode.dataset.originalText;
+                textNode.style.color = ''; textNode.style.fontStyle = ''; textNode.style.display = '';
+            }
+            const tempBlockedMsg = node.querySelector('.blocked-temp');
+            if (tempBlockedMsg) tempBlockedMsg.remove();
+            node.querySelectorAll(SEL.image).forEach(img => img.style.display = '');
             filterChat(node);
         });
     }
 
+    function startPatrol() {
+        if (patrolInterval) clearInterval(patrolInterval);
+        let attempts = 0;
+        patrolInterval = setInterval(() => {
+            attempts++;
+            if (runPatrol() || attempts > 10) { clearInterval(patrolInterval); patrolInterval = null; }
+        }, 500);
+    }
+
+    function runPatrol() {
+        if (!isReady) return false;
+        let caughtSomething = false;
+        manageVisibility(SEL.fixed, hideFixedMsg);
+        manageVisibility(SEL.ranking, blockRanking);
+        manageVisibility(SEL.mission, blockMission);
+        if (isEnabled) {
+            document.querySelectorAll(SEL.guide).forEach(node => {
+                if (node.style.display !== 'none') { removeElement(node); caughtSomething = true; }
+            });
+        }
+        return caughtSomething;
+    }
+
+    function manageVisibility(selector, shouldHide) {
+        document.querySelectorAll(selector).forEach(node => {
+            if (shouldHide) { if (node.style.display !== 'none') node.style.display = 'none'; }
+            else { if (node.style.display === 'none') node.style.display = ''; }
+        });
+    }
+
     function filterChat(node) {
-        if (!isReady || !isEnabled || node.dataset.processed) return;
+        if (!isReady || node.dataset.processed) return;
+        if (!isEnabled && !blockDonation) return;
         node.dataset.processed = 'true';
+
+        if (node.nodeType === 1 && node.matches(SEL.guide)) { if (isEnabled) removeElement(node); return; }
+        if (node.nodeType === 1 && node.matches(SEL.donation)) { if (blockDonation) removeElement(node); return; }
         if (node.nodeType === 1 && node.matches(SEL.item)) {
+            if (!isEnabled) return;
             let shouldBlock = false;
-
-            // 1. 텍스트 검사
             const textNode = node.querySelector(SEL.text);
-            if (textNode && currentKeywords.some(k => textNode.textContent.includes(k))) shouldBlock = true;
+            const contentToCheck = textNode ? (textNode.dataset.originalText || textNode.textContent) : '';
 
-            // 2. 닉네임 검사
+            if (contentToCheck && currentKeywords.some(k => contentToCheck.includes(k))) shouldBlock = true;
             if (!shouldBlock) {
                 const nameNode = node.querySelector(SEL.nickname);
                 if (nameNode && currentKeywords.some(k => nameNode.textContent.includes(k))) shouldBlock = true;
             }
-
-            // 3. 이미지 검사
             if (!shouldBlock && currentKeywords.length > 0) {
                 const images = node.querySelectorAll(SEL.image);
                 for (let img of images) {
-                    if (currentKeywords.some(k => (img.src || '').includes(k))) {
-                        shouldBlock = true;
-                        break;
-                    }
+                    if (img.closest(SEL.badge)) continue;
+                    if (currentKeywords.some(k => (img.src || '').includes(k))) { shouldBlock = true; break; }
                 }
             }
-            
             if (shouldBlock) {
-                node.style.cssText = `
-                    display: none !important;
-                    height: 0px !important;
-                    min-height: 0px !important;
-                    max-height: 0px !important;
-                    margin: 0px !important;
-                    padding: 0px !important;
-                    border: none !important;
-                    line-height: 0px !important;
-                    opacity: 0 !important;
-                    pointer-events: none !important;
-                `;
+                if (blockMethod === 'remove') removeElement(node);
+                else if (blockMethod === 'text-only') replaceElement(node, true);
+                else replaceElement(node, false);
             }
         }
     }
 
+    function removeElement(node) {
+        applyHideStyle(node);
+        const parent = node.parentElement;
+        if (parent && !parent.matches(SEL.container)) {
+            if (parent.childElementCount === 1 || parent.matches(SEL.item)) {
+                applyHideStyle(parent);
+                parent._hiddenByExtension = true;
+            }
+        }
+    }
+
+    function replaceElement(node, hideMode) {
+        node.style.display = ''; node.style.opacity = '1'; node.style.height = 'auto';
+        const textNode = node.querySelector(SEL.text);
+        if (textNode) {
+            if (!textNode.dataset.originalText) textNode.dataset.originalText = textNode.textContent;
+            if (hideMode) textNode.style.display = 'none';
+            else {
+                textNode.textContent = '차단된 메시지입니다.';
+                textNode.style.color = '#777'; textNode.style.fontStyle = 'italic'; textNode.style.display = '';
+            }
+        } else if (!hideMode) {
+            const contentArea = node.querySelector('[class*="live_chatting_message_wrapper"]');
+            if (contentArea && !contentArea.querySelector('.blocked-temp')) {
+                const span = document.createElement('span');
+                span.className = 'blocked-temp'; span.textContent = '차단된 메시지입니다.';
+                span.style.color = '#777'; span.style.fontStyle = 'italic';
+                contentArea.appendChild(span);
+            }
+        }
+        node.querySelectorAll(SEL.image).forEach(img => { if (!img.closest(SEL.badge)) img.style.display = 'none'; });
+    }
+
+    function applyHideStyle(el) {
+        if (el.style.display === 'none' && el.style.height === '0px') return;
+        el.style.cssText = 'display:none !important; height:0px !important; min-height:0px !important; max-height:0px !important; margin:0px !important; padding:0px !important; border:none !important; opacity:0 !important; pointer-events:none !important;';
+    }
+
     function tryCollectPower(node) {
         if (node.matches && node.matches(SEL.btn)) node.click();
-        else {
-            const btn = node.querySelector(SEL.btn);
-            if (btn) btn.click();
-        }
+        else { const btn = node.querySelector(SEL.btn); if (btn) btn.click(); }
     }
 
     const chatObserver = new MutationObserver((mutations) => {
         mutations.forEach(m => m.addedNodes.forEach(node => {
             if (node.nodeType === 1) {
-                filterChat(node);
-                tryCollectPower(node);
+                filterChat(node); tryCollectPower(node);
+                if (node.matches && (node.matches(SEL.fixed) || node.matches(SEL.ranking) || node.matches(SEL.mission))) startPatrol();
             }
         }));
     });
@@ -144,7 +218,7 @@
         const target = document.querySelector(SEL.container);
         if (target) {
             chatObserver.observe(target, { childList: true, subtree: true });
-            initSettings();
+            initSettings(); startPatrol();
         } else setTimeout(startObserving, 1000);
     }
 
@@ -152,9 +226,7 @@
     let lastUrl = location.href;
     new MutationObserver(() => {
         if (location.href !== lastUrl) {
-            lastUrl = location.href;
-            chatObserver.disconnect();
-            startObserving();
+            lastUrl = location.href; chatObserver.disconnect(); startObserving();
         }
     }).observe(document.body, { childList: true, subtree: true });
 })();

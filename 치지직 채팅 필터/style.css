@@ -1,0 +1,519 @@
+:root {
+    --bg-color: #191919;
+    --card-bg: #232323;
+    --accent-color: #00ffa3; 
+    --text-primary: #ffffff;
+    --text-secondary: #aaaaaa;
+    --border-color: #333333;
+    --danger-color: #ff4f4f;
+}
+
+
+
+body {
+    width: 320px;
+    /* [중요] 설정 탭의 모든 내용이 딱 들어가는 높이로 고정 */
+    height: 460px; 
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+    /* [핵심] 스크롤바 자체를 아예 없애고 스크롤도 안 되게 막음 */
+    overflow: hidden; 
+}
+
+
+
+/* --- 탭 스타일 --- */
+.tab-container {
+    display: flex;
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    height: 45px;
+}
+
+
+
+.tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+    position: relative;
+}
+
+
+
+.tab-btn:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+
+
+.tab-btn.active {
+    color: var(--accent-color);
+    font-weight: 700;
+}
+
+
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--accent-color);
+}
+
+
+
+/* --- 컨텐츠 영역 --- */
+
+.content-view {
+
+    /* 상하좌우 여백을 최소화하여 한 화면에 담음 */
+
+    padding: 12px 15px; 
+
+    width: 100%;
+
+    height: calc(100% - 45px); /* 탭 제외한 나머지 공간 */
+
+    box-sizing: border-box;
+
+    /* [핵심] 내부 스크롤도 금지 */
+
+    overflow: hidden; 
+
+}
+
+.hidden {
+
+    display: none;
+
+}
+
+
+
+/* --- 설정 그룹 --- */
+
+.setting-group {
+
+    margin-bottom: 12px; /* 그룹 간 간격 증가 */
+
+}
+
+
+
+.setting-item {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 14px; /* 토글 아이템 간 간격 증가 */
+
+}
+
+.setting-item:last-child {
+
+    margin-bottom: 0;
+
+}
+
+
+
+.main-item {
+
+    margin-bottom: 12px;
+
+}
+
+.label-text {
+
+    font-size: 14px;
+
+    font-weight: 500;
+
+    color: #eee;
+
+}
+
+
+
+/* --- 스위치 --- */
+
+.switch {
+
+    position: relative;
+
+    display: inline-block;
+
+    width: 38px;
+
+    height: 20px;
+
+}
+
+.switch input { opacity: 0; width: 0; height: 0; }
+
+.slider {
+
+    position: absolute;
+
+    cursor: pointer;
+
+    top: 0; left: 0; right: 0; bottom: 0;
+
+    background-color: #444;
+
+    transition: .3s;
+
+    border-radius: 20px;
+
+}
+
+.slider:before {
+
+    position: absolute;
+
+    content: "";
+
+    height: 16px;
+
+    width: 16px;
+
+    left: 2px;
+
+    bottom: 2px;
+
+    background-color: white;
+
+    transition: .3s;
+
+    border-radius: 50%;
+
+}
+
+input:checked + .slider { background-color: var(--accent-color); }
+
+input:checked + .slider:before { transform: translateX(18px); }
+
+
+
+/* --- 라디오 버튼 --- */
+
+.radio-group {
+
+    background-color: var(--card-bg);
+
+    padding: 8px 12px; /* 패딩 축소 */
+
+    border-radius: 8px;
+
+    border: 1px solid var(--border-color);
+
+    margin-bottom: 0;
+
+}
+
+
+
+.radio-item {
+
+    display: flex;
+
+    align-items: center;
+
+    margin: 5px 0;
+
+    cursor: pointer;
+
+}
+
+.radio-item input {
+
+    margin: 0 8px 0 0;
+
+    accent-color: var(--accent-color);
+
+    width: 16px;
+
+    height: 16px;
+
+    cursor: pointer;
+
+}
+
+.radio-label {
+
+    font-size: 13px;
+
+    color: var(--text-secondary);
+
+}
+
+.radio-item input:checked + .radio-label {
+
+    color: #fff;
+
+}
+
+
+
+/* --- 사용 방법 안내 박스 --- */
+
+.help-box {
+
+    margin-top: 20px;
+
+    margin-bottom: 0;
+
+    padding: 10px;
+
+    background-color: rgba(0, 255, 163, 0.05);
+
+    border: 1px solid rgba(0, 255, 163, 0.2);
+
+    border-radius: 8px;
+
+    font-size: 12px;
+
+    color: #ccc;
+
+    line-height: 1.4;
+
+}
+
+.help-title {
+
+    margin: 0 0 3px 0;
+
+    font-weight: bold;
+
+    color: var(--accent-color);
+
+    font-size: 13px;
+
+}
+
+.help-text {
+
+    margin: 0;
+
+}
+
+.highlight {
+
+    color: #fff;
+
+    font-weight: bold;
+
+    background: rgba(255,255,255,0.1);
+
+    padding: 1px 4px;
+
+    border-radius: 3px;
+
+}
+
+
+
+/* --- 차단 목록 탭 --- */
+
+/* 차단 목록 탭은 구조상 요소들을 꽉 채우기 위해 flex column 사용 */
+
+#view-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+}
+
+#view-list.hidden {
+
+    display: none;
+
+}
+
+
+
+.input-group {
+
+    display: flex;
+
+    gap: 8px;
+
+    margin-bottom: 10px;
+
+    flex-shrink: 0; /* 크기 줄어듦 방지 */
+
+}
+
+
+
+#input-keyword {
+
+    flex: 1;
+
+    padding: 10px 12px;
+
+    background: var(--card-bg);
+
+    border: 1px solid var(--border-color);
+
+    color: white;
+
+    border-radius: 6px;
+
+    font-size: 13px;
+
+    outline: none;
+
+}
+
+#input-keyword:focus { border-color: var(--accent-color); }
+
+
+
+#btn-add {
+
+    padding: 0 16px;
+
+    background-color: var(--accent-color);
+
+    color: #000;
+
+    border: none;
+
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    font-weight: 700;
+
+    font-size: 13px;
+
+}
+
+
+
+.list-box {
+
+    /* [중요] 남은 공간을 리스트가 모두 차지하도록 설정 */
+
+    flex-grow: 1; 
+
+    overflow-y: auto; /* 리스트 내부만 스크롤 가능 (스크롤바는 숨겨짐) */
+
+    background: var(--card-bg);
+
+    border: 1px solid var(--border-color);
+
+    border-radius: 6px;
+
+    padding: 5px;
+
+    margin-bottom: 10px;
+
+}
+
+/* 리스트 박스 내부 스크롤바 숨김 */
+
+.list-box::-webkit-scrollbar { display: none; }
+
+
+
+.list-item {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 8px 10px;
+
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+
+    font-size: 13px;
+
+    color: #ddd;
+
+}
+
+.list-item:last-child { border-bottom: none; }
+
+
+
+.delete-btn {
+
+    color: #666;
+
+    cursor: pointer;
+
+    font-weight: bold;
+
+    font-size: 12px;
+
+    padding: 2px 6px;
+
+}
+
+.delete-btn:hover { color: var(--danger-color); }
+
+
+
+.bottom-actions {
+
+    display: flex;
+
+    gap: 8px;
+
+    flex-shrink: 0; /* 버튼 영역 크기 고정 */
+
+}
+
+.action-btn {
+
+    flex: 1;
+
+    padding: 9px 0;
+
+    background-color: transparent;
+
+    color: var(--text-secondary);
+
+    border: 1px solid var(--border-color);
+
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    font-size: 12px;
+
+    transition: all 0.2s;
+
+}
+
+.action-btn:hover {
+
+    border-color: #666;
+
+    color: #fff;
+
+    background-color: rgba(255,255,255,0.05);
+
+}

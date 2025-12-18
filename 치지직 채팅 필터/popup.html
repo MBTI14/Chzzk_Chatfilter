@@ -1,35 +1,63 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<style>
-body{width:300px;padding:15px;font-family:sans-serif;background:#1e1e1e;color:#fff}
-h3{margin:0 0 15px 0;font-size:16px;color:#00ffa3}
-.switch-container{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
-.switch{position:relative;display:inline-block;width:40px;height:20px}
-.switch input{opacity:0;width:0;height:0}
-.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#555;transition:.4s;border-radius:20px}
-.slider:before{position:absolute;content:"";height:16px;width:16px;left:2px;bottom:2px;background-color:#fff;transition:.4s;border-radius:50%}
-input:checked+.slider{background-color:#00ffa3}
-input:checked+.slider:before{transform:translateX(20px)}
-.input-group{display:flex;gap:5px;margin-bottom:10px}
-input[type="text"]{flex:1;padding:8px;border-radius:4px;border:1px solid #444;background:#333;color:#fff;outline:none}
-button#addBtn{padding:8px 12px;background:#00ffa3;border:none;border-radius:4px;color:#000;font-weight:bold;cursor:pointer}
-button#addBtn:hover{background:#00cc82}
-ul{list-style:none;padding:0;margin:0;max-height:250px;overflow-y:auto}
-li{background:#333;padding:8px;margin-bottom:5px;border-radius:4px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.keyword-content{display:flex;align-items:center;gap:10px;overflow:hidden}
-.emote-preview{height:30px;width:auto;border-radius:4px;border:1px solid #555}
-.text-preview{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
-.delete-btn{color:#ff5555;cursor:pointer;font-weight:bold;margin-left:10px;min-width:20px;text-align:center}
-.delete-btn:hover{color:f00}
-</style>
+    <meta charset="UTF-8">
+    <title>치지직 차단 설정</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
-<h3>치지직 클린 설정</h3>
-<div class="switch-container"><span>필터 기능 켜기</span><label class="switch"><input type="checkbox" id="toggleFilter"><span class="slider"></span></label></div>
-<div class="input-group"><input type="text" id="keywordInput" placeholder="단어 입력"><button id="addBtn">추가</button></div>
-<ul id="keywordList"></ul>
-<script src="popup.js"></script>
+    <div class="tab-container">
+        <button id="btn-tab-settings" class="tab-btn active">설정</button>
+        <button id="btn-tab-list" class="tab-btn">차단 목록</button>
+    </div>
+    <div id="view-settings" class="content-view">
+        <div class="setting-group">
+            <div class="setting-item">
+                <span class="label-text">치지직 채팅 필터</span>
+                <label class="switch"><input type="checkbox" id="toggle-chat-block"><span class="slider round"></span></label>
+            </div>
+            <div class="radio-group">
+                <label class="radio-item"><input type="radio" name="blockMethod" value="remove" checked><span class="radio-label">아이디, 채팅 전부 필터</span></label>
+                <label class="radio-item"><input type="radio" name="blockMethod" value="text-only"><span class="radio-label">아이디는 유지, 채팅만 필터</span></label>
+                <label class="radio-item"><input type="radio" name="blockMethod" value="notice"><span class="radio-label">아이디는 유지, 채팅은 차단 메시지로 대체</span></label>
+            </div>
+        </div>
+        <div class="setting-group">
+            <div class="setting-item">
+                <span class="label-text">고정 메시지 차단</span>
+                <label class="switch"><input type="checkbox" id="toggle-fixed-block"><span class="slider round"></span></label>
+            </div>
+            <div class="setting-item">
+                <span class="label-text">후원 메시지 차단</span>
+                <label class="switch"><input type="checkbox" id="toggle-donation-block"><span class="slider round"></span></label>
+            </div>
+            <div class="setting-item">
+                <span class="label-text">주간 후원 랭킹 차단</span>
+                <label class="switch"><input type="checkbox" id="toggle-ranking-block"><span class="slider round"></span></label>
+            </div>
+            <div class="setting-item">
+                <span class="label-text">진행 중인 미션 차단</span>
+                <label class="switch"><input type="checkbox" id="toggle-mission-block"><span class="slider round"></span></label>
+            </div>
+        </div>
+        <div class="help-box">
+            <p class="help-title">💡 사용 방법</p>
+            <p class="help-text"><span class="highlight">Alt + 좌클릭</span>으로 채팅창에서 유저 아이디와 이모티콘을 즉시 차단할 수 있습니다. 차단한 목록은 상단 '차단 목록' 탭에서 관리하세요.</p>
+        </div>
+    </div>
+    <div id="view-list" class="content-view hidden">
+        <div class="input-group">
+            <input type="text" id="input-keyword" placeholder="차단할 키워드 입력">
+            <button id="btn-add">추가</button>
+        </div>
+        <div id="block-list-container" class="list-box"></div>
+        <div class="bottom-actions">
+            <button id="btn-import" class="action-btn">불러오기</button>
+            <button id="btn-export" class="action-btn">내보내기</button>
+        </div>
+        <input type="file" id="file-input" accept=".json" style="display: none;">
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>
