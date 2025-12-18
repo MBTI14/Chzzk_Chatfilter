@@ -47,32 +47,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderList() {
         listContainer.innerHTML = '';
-        chrome.storage.local.get(['bannedKeywords', 'emoteMap'], (data) => {
+        // [수정] userMap도 함께 불러옴
+        chrome.storage.local.get(['bannedKeywords', 'emoteMap', 'userMap'], (data) => {
             const keywords = data.bannedKeywords || [];
             const emoteMap = data.emoteMap || {};
+            const userMap = data.userMap || {};
+
             if (keywords.length === 0) {
                 listContainer.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#555;"><div style="font-size:24px; margin-bottom:8px;">📭</div><div style="font-size:13px; color:#777;">차단 목록이 비어있습니다</div></div>`;
                 return;
             }
+
             keywords.forEach(keyword => {
                 const item = document.createElement('div');
                 item.className = 'list-item';
+
+                // 왼쪽 영역 (내용 + ID배지)
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'list-item-left';
+
                 if (emoteMap[keyword]) {
                     const img = document.createElement('img');
                     img.src = emoteMap[keyword];
                     img.style.height = '24px';
                     img.style.borderRadius = '4px';
-                    item.appendChild(img);
+                    leftDiv.appendChild(img);
                 } else {
                     const textSpan = document.createElement('span');
                     textSpan.textContent = keyword;
-                    item.appendChild(textSpan);
+                    textSpan.className = 'keyword-text';
+                    leftDiv.appendChild(textSpan);
+                    
+                    // [수정] userMap에 있으면 ID 배지 추가
+                    if (userMap[keyword]) {
+                        const idBadge = document.createElement('span');
+                        idBadge.className = 'id-badge';
+                        idBadge.textContent = 'ID';
+                        leftDiv.appendChild(idBadge);
+                    }
                 }
+                
+                item.appendChild(leftDiv);
+
                 const delBtn = document.createElement('span');
                 delBtn.className = 'delete-btn';
                 delBtn.textContent = '삭제';
                 delBtn.onclick = () => removeKeyword(keyword);
                 item.appendChild(delBtn);
+
                 listContainer.appendChild(item);
             });
         });
@@ -96,12 +118,16 @@ document.addEventListener('DOMContentLoaded', () => {
     inputKeyword.addEventListener('keypress', (e) => { if (e.key === 'Enter') btnAdd.click(); });
 
     function removeKeyword(target) {
-        chrome.storage.local.get(['bannedKeywords', 'emoteMap'], (data) => {
+        chrome.storage.local.get(['bannedKeywords', 'emoteMap', 'userMap'], (data) => {
             let keywords = data.bannedKeywords || [];
             let emoteMap = data.emoteMap || {};
+            let userMap = data.userMap || {};
+            
             const newKeywords = keywords.filter(k => k !== target);
             if (emoteMap[target]) delete emoteMap[target];
-            chrome.storage.local.set({ bannedKeywords: newKeywords, emoteMap: emoteMap }, renderList);
+            if (userMap[target]) delete userMap[target]; // [수정] 삭제 시 userMap에서도 제거
+
+            chrome.storage.local.set({ bannedKeywords: newKeywords, emoteMap: emoteMap, userMap: userMap }, renderList);
         });
     }
 
