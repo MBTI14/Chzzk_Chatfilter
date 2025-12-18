@@ -17,37 +17,16 @@
     
     let currentKeywords = [], isEnabled = true, hideFixedMsg = false, blockDonation = false, blockRanking = false, blockMission = false, blockMethod = 'remove', isReady = false, patrolInterval = null;
 
-    document.addEventListener('click', (e) => {
-        if (!e.altKey) return;
+    document.addEventListener('contextmenu', (e) => {
         if (e.target.matches(SEL.nickname)) {
-            e.preventDefault(); e.stopPropagation();
-            const username = e.target.textContent.trim();
-            if (username) addKeywordToStorage(username, null, true);
-        } else if (e.target.tagName === 'IMG') {
-            e.preventDefault(); e.stopPropagation();
-            if (e.target.closest(SEL.badge)) return;
-            const src = e.target.src;
-            if (src) {
-                let keyword = src;
-                try { keyword = src.split('/').pop().split('.')[0]; } catch (err) {}
-                addKeywordToStorage(keyword, src, false);
-            }
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(e.target);
+            selection.removeAllRanges();
+            selection.addRange(range);
         }
     }, true);
 
-    function addKeywordToStorage(keyword, imageUrl, isUser) {
-        chrome.storage.local.get(['bannedKeywords', 'emoteMap', 'userMap'], (data) => {
-            const keywords = data.bannedKeywords || [];
-            const emoteMap = data.emoteMap || {};
-            const userMap = data.userMap || {};
-            if (!keywords.includes(keyword)) {
-                keywords.push(keyword);
-                if (imageUrl) emoteMap[keyword] = imageUrl;
-                if (isUser) userMap[keyword] = true;
-                chrome.storage.local.set({ bannedKeywords: keywords, emoteMap, userMap });
-            }
-        });
-    }
 
     function initSettings() {
         chrome.storage.local.get(['isFilterEnabled', 'hideFixedMsg', 'blockDonation', 'blockRanking', 'blockMission', 'bannedKeywords', 'blockMethod'], (data) => {
