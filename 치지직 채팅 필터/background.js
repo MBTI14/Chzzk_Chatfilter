@@ -4,13 +4,13 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
         id: "block-id",
         title: "이 아이디 차단하기",
-        contexts: ["selection"]
+        contexts: ["selection"] 
     });
 
     chrome.contextMenus.create({
         id: "block-emote",
         title: "이 이모티콘 차단하기",
-        contexts: ["image"]
+        contexts: ["image"] 
     });
 });
 

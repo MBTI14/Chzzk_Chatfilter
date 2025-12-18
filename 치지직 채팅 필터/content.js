@@ -4,9 +4,10 @@
         item: '[class*="live_chatting_list_item"], [class*="vod_chatting_item"]',
         guide: '[class*="live_chatting_guide_container"]',
         fixed: '[class*="live_chatting_fixed_wrapper"]',
-        donation: '[class*="live_chatting_donation_message_container"]',
+        donation: '[class*="live_chatting_donation_"]',
         ranking: '[class*="live_chatting_ranking_container"]',
         mission: '[class*="live_chatting_mission_message_wrapper"], [class*="live_chatting_fixed_mission_header"]',
+        prediction: '[class*="live_chatting_prediction_"], [class*="live_chatting_vote_"], [class*="live_chatting_fixed_prediction_"]',
         text: '[class*="live_chatting_message_text"]',
         nickname: '[class*="name_text"]',
         image: 'img',
@@ -15,7 +16,7 @@
         container: '[class*="live_chatting_content"], [class*="vod_chatting_list"], [class*="live_chatting_list_wrapper"]'
     };
     
-    let currentKeywords = [], isEnabled = true, hideFixedMsg = false, blockDonation = false, blockRanking = false, blockMission = false, blockMethod = 'remove', isReady = false, patrolInterval = null;
+    let currentKeywords = [], isEnabled = true, hideFixedMsg = false, blockDonation = false, blockRanking = false, blockMission = false, blockLog = false, blockMethod = 'remove', isReady = false;
 
     document.addEventListener('contextmenu', (e) => {
         if (e.target.matches(SEL.nickname)) {
@@ -27,14 +28,14 @@
         }
     }, true);
 
-
     function initSettings() {
-        chrome.storage.local.get(['isFilterEnabled', 'hideFixedMsg', 'blockDonation', 'blockRanking', 'blockMission', 'bannedKeywords', 'blockMethod'], (data) => {
+        chrome.storage.local.get(['isFilterEnabled', 'hideFixedMsg', 'blockDonation', 'blockRanking', 'blockMission', 'blockLog', 'bannedKeywords', 'blockMethod'], (data) => {
             isEnabled = data.isFilterEnabled !== false;
             hideFixedMsg = data.hideFixedMsg === true;
             blockDonation = data.blockDonation === true;
             blockRanking = data.blockRanking === true;
             blockMission = data.blockMission === true;
+            blockLog = data.blockLog === true;
             blockMethod = data.blockMethod || 'remove';
             currentKeywords = data.bannedKeywords || [];
             if (!data.bannedKeywords) chrome.storage.local.set({ bannedKeywords: [] });
@@ -52,6 +53,7 @@
         if (changes.hideFixedMsg) { hideFixedMsg = changes.hideFixedMsg.newValue; updatePatrol = true; }
         if (changes.blockRanking) { blockRanking = changes.blockRanking.newValue; updatePatrol = true; }
         if (changes.blockMission) { blockMission = changes.blockMission.newValue; updatePatrol = true; }
+        if (changes.blockLog) { blockLog = changes.blockLog.newValue; updatePatrol = true; }
         if (updatePatrol) runPatrol();
         if (needReprocess) reprocessAllChats();
     });
@@ -78,27 +80,17 @@
         });
     }
 
-    function startPatrol() {
-        if (patrolInterval) clearInterval(patrolInterval);
-        let attempts = 0;
-        patrolInterval = setInterval(() => {
-            attempts++;
-            if (runPatrol() || attempts > 10) { clearInterval(patrolInterval); patrolInterval = null; }
-        }, 500);
-    }
-
     function runPatrol() {
-        if (!isReady) return false;
-        let caughtSomething = false;
+        if (!isReady) return;
         manageVisibility(SEL.fixed, hideFixedMsg);
         manageVisibility(SEL.ranking, blockRanking);
         manageVisibility(SEL.mission, blockMission);
+        manageVisibility(SEL.prediction, blockLog);
         if (isEnabled) {
             document.querySelectorAll(SEL.guide).forEach(node => {
-                if (node.style.display !== 'none') { removeElement(node); caughtSomething = true; }
+                if (node.style.display !== 'none') removeElement(node);
             });
         }
-        return caughtSomething;
     }
 
     function manageVisibility(selector, shouldHide) {
@@ -110,13 +102,28 @@
 
     function filterChat(node) {
         if (!isReady || node.dataset.processed) return;
-        if (!isEnabled && !blockDonation) return;
+        
+        const isTarget = isEnabled || blockDonation || hideFixedMsg || blockRanking || blockMission || blockLog;
+        if (!isTarget) return;
+
         node.dataset.processed = 'true';
 
+        if (node.nodeType === 1 && node.matches(SEL.donation)) { 
+            if (blockDonation) { removeElement(node); return; }
+        }
+        
         if (node.nodeType === 1 && node.matches(SEL.guide)) { if (isEnabled) removeElement(node); return; }
-        if (node.nodeType === 1 && node.matches(SEL.donation)) { if (blockDonation) removeElement(node); return; }
+
         if (node.nodeType === 1 && node.matches(SEL.item)) {
-            if (!isEnabled) return;
+            
+            if (blockDonation && node.querySelector(SEL.donation)) { removeElement(node); return; }
+            if (hideFixedMsg && node.querySelector(SEL.fixed)) { removeElement(node); return; }
+            if (blockRanking && node.querySelector(SEL.ranking)) { removeElement(node); return; }
+            if (blockMission && node.querySelector(SEL.mission)) { removeElement(node); return; }
+            if (blockLog && node.querySelector(SEL.prediction)) { removeElement(node); return; }
+
+            if (!isEnabled) return; 
+
             let shouldBlock = false;
             const textNode = node.querySelector(SEL.text);
             const contentToCheck = textNode ? (textNode.dataset.originalText || textNode.textContent) : '';
@@ -188,7 +195,7 @@
         mutations.forEach(m => m.addedNodes.forEach(node => {
             if (node.nodeType === 1) {
                 filterChat(node); tryCollectPower(node);
-                if (node.matches && (node.matches(SEL.fixed) || node.matches(SEL.ranking) || node.matches(SEL.mission))) startPatrol();
+                if (node.matches && (node.matches(SEL.fixed) || node.matches(SEL.ranking) || node.matches(SEL.mission) || node.matches(SEL.prediction))) runPatrol();
             }
         }));
     });
@@ -197,7 +204,9 @@
         const target = document.querySelector(SEL.container);
         if (target) {
             chatObserver.observe(target, { childList: true, subtree: true });
-            initSettings(); startPatrol();
+            initSettings();
+            runPatrol();
+            setInterval(runPatrol, 1000);
         } else setTimeout(startObserving, 1000);
     }
 

@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleDonation = document.getElementById('toggle-donation-block');
     const toggleRanking = document.getElementById('toggle-ranking-block');
     const toggleMission = document.getElementById('toggle-mission-block');
+    const toggleLog = document.getElementById('toggle-log-block');
     const radioButtons = document.querySelectorAll('input[name="blockMethod"]');
     const inputKeyword = document.getElementById('input-keyword');
     const btnAdd = document.getElementById('btn-add');
@@ -27,12 +28,13 @@ document.addEventListener('DOMContentLoaded', () => {
     tabSettings.addEventListener('click', () => switchTab('settings'));
     tabList.addEventListener('click', () => switchTab('list'));
 
-    chrome.storage.local.get(['isFilterEnabled', 'hideFixedMsg', 'blockDonation', 'blockMethod', 'blockRanking', 'blockMission'], (data) => {
+    chrome.storage.local.get(['isFilterEnabled', 'hideFixedMsg', 'blockDonation', 'blockMethod', 'blockRanking', 'blockMission', 'blockLog'], (data) => {
         toggleChat.checked = data.isFilterEnabled !== false;
         toggleFixed.checked = data.hideFixedMsg === true;
         toggleDonation.checked = data.blockDonation === true;
         toggleRanking.checked = data.blockRanking === true;
         toggleMission.checked = data.blockMission === true;
+        toggleLog.checked = data.blockLog === true;
         const savedMethod = data.blockMethod || 'remove';
         radioButtons.forEach(radio => radio.checked = (radio.value === savedMethod));
     });
@@ -43,11 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleDonation.addEventListener('change', () => saveConfig('blockDonation', toggleDonation.checked));
     toggleRanking.addEventListener('change', () => saveConfig('blockRanking', toggleRanking.checked));
     toggleMission.addEventListener('change', () => saveConfig('blockMission', toggleMission.checked));
+    toggleLog.addEventListener('change', () => saveConfig('blockLog', toggleLog.checked));
     radioButtons.forEach(radio => radio.addEventListener('change', (e) => { if(e.target.checked) saveConfig('blockMethod', e.target.value); }));
 
     function renderList() {
         listContainer.innerHTML = '';
-        // [수정] userMap도 함께 불러옴
         chrome.storage.local.get(['bannedKeywords', 'emoteMap', 'userMap'], (data) => {
             const keywords = data.bannedKeywords || [];
             const emoteMap = data.emoteMap || {};
@@ -62,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const item = document.createElement('div');
                 item.className = 'list-item';
 
-                // 왼쪽 영역 (내용 + ID배지)
                 const leftDiv = document.createElement('div');
                 leftDiv.className = 'list-item-left';
 
@@ -78,7 +79,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     textSpan.className = 'keyword-text';
                     leftDiv.appendChild(textSpan);
                     
-                    // [수정] userMap에 있으면 ID 배지 추가
                     if (userMap[keyword]) {
                         const idBadge = document.createElement('span');
                         idBadge.className = 'id-badge';
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const newKeywords = keywords.filter(k => k !== target);
             if (emoteMap[target]) delete emoteMap[target];
-            if (userMap[target]) delete userMap[target]; // [수정] 삭제 시 userMap에서도 제거
+            if (userMap[target]) delete userMap[target];
 
             chrome.storage.local.set({ bannedKeywords: newKeywords, emoteMap: emoteMap, userMap: userMap }, renderList);
         });

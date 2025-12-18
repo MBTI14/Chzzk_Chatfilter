@@ -20,7 +20,6 @@ body {
     overflow: hidden; 
 }
 
-/* --- 탭 스타일 --- */
 .tab-container {
     display: flex;
     background-color: var(--bg-color);
@@ -60,17 +59,18 @@ body {
     background-color: var(--accent-color);
 }
 
-/* --- 컨텐츠 영역 --- */
 .content-view {
     padding: 12px 15px; 
     width: 100%;
     height: calc(100% - 45px);
     box-sizing: border-box;
     overflow: hidden; 
+    display: flex;
+    flex-direction: column;
 }
+
 .hidden { display: none; }
 
-/* --- 설정 그룹 --- */
 .setting-group { margin-bottom: 12px; }
 .setting-item {
     display: flex;
@@ -85,7 +85,6 @@ body {
     color: #eee;
 }
 
-/* --- 스위치 --- */
 .switch {
     position: relative;
     display: inline-block;
@@ -115,7 +114,6 @@ body {
 input:checked + .slider { background-color: var(--accent-color); }
 input:checked + .slider:before { transform: translateX(18px); }
 
-/* --- 라디오 버튼 --- */
 .radio-group {
     background-color: var(--card-bg);
     padding: 8px 12px;
@@ -142,10 +140,9 @@ input:checked + .slider:before { transform: translateX(18px); }
 }
 .radio-item input:checked + .radio-label { color: #fff; }
 
-/* --- 사용 방법 안내 박스 --- */
 .help-box {
-    margin-top: 20px;
-    margin-bottom: 0;
+    margin-top: auto;
+    margin-bottom: auto;
     padding: 10px;
     background-color: rgba(0, 255, 163, 0.05);
     border: 1px solid rgba(0, 255, 163, 0.2);
@@ -169,7 +166,6 @@ input:checked + .slider:before { transform: translateX(18px); }
     border-radius: 3px;
 }
 
-/* --- 차단 목록 탭 --- */
 #view-list {
     display: flex;
     flex-direction: column;
@@ -227,11 +223,10 @@ input:checked + .slider:before { transform: translateX(18px); }
 }
 .list-item:last-child { border-bottom: none; }
 
-/* 텍스트와 ID배지를 묶어주는 왼쪽 영역 */
 .list-item-left {
     display: flex;
     align-items: center;
-    gap: 8px; /* 텍스트와 ID 배지 사이 간격 */
+    gap: 8px;
     overflow: hidden;
 }
 
@@ -239,10 +234,9 @@ input:checked + .slider:before { transform: translateX(18px); }
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 180px; /* 긴 텍스트 말줄임 */
+    max-width: 180px;
 }
 
-/* [추가됨] ID 표시 배지 스타일 */
 .id-badge {
     background-color: var(--accent-color);
     color: #000;
