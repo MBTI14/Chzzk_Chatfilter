@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "치지직 클린 필터 & 자동 수령",
+  "name": "Chzzk Chatfilter v1.0",
   "version": "1.0",
-  "description": "채팅 필터링 및 통나무 자동 수령 (Icon by anggara from Flaticon)",
+  "description": "채팅 필터링 및 통나무 포인트 자동 수령 (Icon by anggara from Flaticon)",
   "permissions": ["storage", "contextMenus"],
   "icons": {
     "16": "icon.png",
