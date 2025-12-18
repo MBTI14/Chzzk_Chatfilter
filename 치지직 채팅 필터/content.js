@@ -17,7 +17,7 @@
         lastRightClickedNode = e.target.closest(SEL.item);
     }, true);
 
-    // 0. Background 명령 수신
+    // 0. Background 명령 수신 (알림창 삭제됨)
     chrome.runtime.onMessage.addListener((request) => {
         if (request.action === "BLOCK_LAST_CLICKED_USER" && lastRightClickedNode) {
             const nameNode = lastRightClickedNode.querySelector(SEL.nickname);
@@ -25,10 +25,9 @@
                 const username = nameNode.textContent.trim();
                 if (username) {
                     addKeywordToStorage(username);
-                    alert(`[차단 완료] 사용자 '${username}'의 채팅이 차단되었습니다.`);
+                    // 알림창(alert) 대신 콘솔에만 조용히 기록
+                    console.log(`[치지직 필터] 사용자 '${username}' 차단됨`);
                 }
-            } else {
-                alert('사용자 이름을 찾을 수 없습니다.');
             }
         }
     });
@@ -49,15 +48,13 @@
         chrome.storage.local.get(['isFilterEnabled', 'bannedKeywords'], (data) => {
             isEnabled = data.isFilterEnabled !== false;
             
-            // [변경] 기본 차단 키워드 정의
+            // 기본 차단 키워드
             const defaultKeywords = ["클린봇이 부적절한 표현을 감지했습니다."];
 
             if (!data.bannedKeywords) {
-                // 1. 처음 설치라 저장된 게 없으면 -> 기본 키워드 적용
                 currentKeywords = defaultKeywords;
                 chrome.storage.local.set({ bannedKeywords: defaultKeywords });
             } else {
-                // 2. 이미 사용 중이면 -> 저장된 목록 사용
                 currentKeywords = data.bannedKeywords;
             }
 
