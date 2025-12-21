@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewSettings = document.getElementById('view-settings');
     const viewList = document.getElementById('view-list');
     const toggleChat = document.getElementById('toggle-chat-block');
+    const toggleHeader = document.getElementById('toggle-header-block');
     const toggleFixed = document.getElementById('toggle-fixed-block');
     const toggleDonation = document.getElementById('toggle-donation-block');
     const toggleRanking = document.getElementById('toggle-ranking-block');
@@ -28,8 +29,9 @@ document.addEventListener('DOMContentLoaded', () => {
     tabSettings.addEventListener('click', () => switchTab('settings'));
     tabList.addEventListener('click', () => switchTab('list'));
 
-    chrome.storage.local.get(['isFilterEnabled', 'hideFixedMsg', 'blockDonation', 'blockMethod', 'blockRanking', 'blockMission', 'blockLog'], (data) => {
+    chrome.storage.local.get(['isFilterEnabled', 'hideHeader', 'hideFixedMsg', 'blockDonation', 'blockMethod', 'blockRanking', 'blockMission', 'blockLog'], (data) => {
         toggleChat.checked = data.isFilterEnabled !== false;
+        toggleHeader.checked = data.hideHeader === true;
         toggleFixed.checked = data.hideFixedMsg === true;
         toggleDonation.checked = data.blockDonation === true;
         toggleRanking.checked = data.blockRanking === true;
@@ -41,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const saveConfig = (key, value) => chrome.storage.local.set({ [key]: value });
     toggleChat.addEventListener('change', () => saveConfig('isFilterEnabled', toggleChat.checked));
+    toggleHeader.addEventListener('change', () => saveConfig('hideHeader', toggleHeader.checked));
     toggleFixed.addEventListener('change', () => saveConfig('hideFixedMsg', toggleFixed.checked));
     toggleDonation.addEventListener('change', () => saveConfig('blockDonation', toggleDonation.checked));
     toggleRanking.addEventListener('change', () => saveConfig('blockRanking', toggleRanking.checked));

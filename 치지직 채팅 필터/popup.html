@@ -18,41 +18,44 @@
                 <label class="switch"><input type="checkbox" id="toggle-chat-block"><span class="slider round"></span></label>
             </div>
             <div class="radio-group">
-                <label class="radio-item"><input type="radio" name="blockMethod" value="remove" checked><span class="radio-label">아이디, 채팅 전부 필터</span></label>
-                <label class="radio-item"><input type="radio" name="blockMethod" value="text-only"><span class="radio-label">아이디는 유지, 채팅만 필터</span></label>
+                <label class="radio-item"><input type="radio" name="blockMethod" value="remove" checked><span class="radio-label">아이디, 채팅 전부 차단</span></label>
+                <label class="radio-item"><input type="radio" name="blockMethod" value="text-only"><span class="radio-label">아이디는 유지, 채팅만 차단</span></label>
                 <label class="radio-item"><input type="radio" name="blockMethod" value="notice"><span class="radio-label">아이디는 유지, 채팅은 차단 메시지로 대체</span></label>
             </div>
         </div>
         <div class="setting-group">
             <div class="setting-item">
-                <span class="label-text">고정 메시지 차단</span>
+                <span class="label-text">◦ 상단 채팅 바 숨김</span>
+                <label class="switch"><input type="checkbox" id="toggle-header-block"><span class="slider round"></span></label>
+            </div>
+            <div class="setting-item">
+                <span class="label-text">◦ 고정 메시지 숨김</span>
                 <label class="switch"><input type="checkbox" id="toggle-fixed-block"><span class="slider round"></span></label>
             </div>
             <div class="setting-item">
-                <span class="label-text">후원 메시지 차단</span>
+                <span class="label-text">◦ 후원 메시지 숨김</span>
                 <label class="switch"><input type="checkbox" id="toggle-donation-block"><span class="slider round"></span></label>
             </div>
             <div class="setting-item">
-                <span class="label-text">주간 후원 랭킹 차단</span>
+                <span class="label-text">◦ 주간 후원 랭킹 숨김</span>
                 <label class="switch"><input type="checkbox" id="toggle-ranking-block"><span class="slider round"></span></label>
             </div>
             <div class="setting-item">
-                <span class="label-text">진행 중인 미션 차단</span>
+                <span class="label-text">◦ 진행 중인 미션 숨김</span>
                 <label class="switch"><input type="checkbox" id="toggle-mission-block"><span class="slider round"></span></label>
             </div>
             <div class="setting-item">
-                <span class="label-text">통나무 승부 예측 차단</span>
+                <span class="label-text">◦ 통나무 승부 예측 숨김</span>
                 <label class="switch"><input type="checkbox" id="toggle-log-block"><span class="slider round"></span></label>
             </div>
         </div>
         <div class="help-box">
-            <p class="help-title">💡 사용 방법</p>
-            <p class="help-text"><span class="highlight">마우스 우클릭</span>으로 채팅창에서 유저 아이디와 이모티콘을 즉시 차단할 수 있습니다.</p>
+            <p class="help-text"><span class="highlight">마우스 우클릭</span> 으로 아이디, 이모티콘을 차단하세요!</p>
         </div>
     </div>
     <div id="view-list" class="content-view hidden">
         <div class="input-group">
-            <input type="text" id="input-keyword" placeholder="차단할 키워드 입력">
+            <input type="text" id="input-keyword" placeholder="보기 싫은 키워드를 직접 추가하세요.">
             <button id="btn-add">추가</button>
         </div>
         <div id="block-list-container" class="list-box"></div>

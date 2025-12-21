@@ -4,6 +4,7 @@
         item: '[class*="live_chatting_list_item"], [class*="vod_chatting_item"]',
         guide: '[class*="live_chatting_guide_container"]',
         fixed: '[class*="live_chatting_fixed_wrapper"]',
+        header: '[class*="live_chatting_header_"]',
         donation: '[class*="live_chatting_donation_"]',
         ranking: '[class*="live_chatting_ranking_container"]',
         mission: '[class*="live_chatting_mission_message_wrapper"], [class*="live_chatting_fixed_mission_header"]',
@@ -16,7 +17,7 @@
         container: '[class*="live_chatting_content"], [class*="vod_chatting_list"], [class*="live_chatting_list_wrapper"]'
     };
     
-    let currentKeywords = [], isEnabled = true, hideFixedMsg = false, blockDonation = false, blockRanking = false, blockMission = false, blockLog = false, blockMethod = 'remove', isReady = false;
+    let currentKeywords = [], isEnabled = true, hideHeader = false, hideFixedMsg = false, blockDonation = false, blockRanking = false, blockMission = false, blockLog = false, blockMethod = 'remove', isReady = false;
 
     document.addEventListener('contextmenu', (e) => {
         if (e.target.matches(SEL.nickname)) {
@@ -29,8 +30,9 @@
     }, true);
 
     function initSettings() {
-        chrome.storage.local.get(['isFilterEnabled', 'hideFixedMsg', 'blockDonation', 'blockRanking', 'blockMission', 'blockLog', 'bannedKeywords', 'blockMethod'], (data) => {
+        chrome.storage.local.get(['isFilterEnabled', 'hideHeader', 'hideFixedMsg', 'blockDonation', 'blockRanking', 'blockMission', 'blockLog', 'bannedKeywords', 'blockMethod'], (data) => {
             isEnabled = data.isFilterEnabled !== false;
+            hideHeader = data.hideHeader === true;
             hideFixedMsg = data.hideFixedMsg === true;
             blockDonation = data.blockDonation === true;
             blockRanking = data.blockRanking === true;
@@ -50,6 +52,7 @@
         if (changes.blockDonation) { blockDonation = changes.blockDonation.newValue; needReprocess = true; }
         if (changes.bannedKeywords) { currentKeywords = changes.bannedKeywords.newValue || []; needReprocess = true; }
         if (changes.blockMethod) { blockMethod = changes.blockMethod.newValue; needReprocess = true; }
+        if (changes.hideHeader) { hideHeader = changes.hideHeader.newValue; updatePatrol = true; }
         if (changes.hideFixedMsg) { hideFixedMsg = changes.hideFixedMsg.newValue; updatePatrol = true; }
         if (changes.blockRanking) { blockRanking = changes.blockRanking.newValue; updatePatrol = true; }
         if (changes.blockMission) { blockMission = changes.blockMission.newValue; updatePatrol = true; }
@@ -82,6 +85,7 @@
 
     function runPatrol() {
         if (!isReady) return;
+        manageVisibility(SEL.header, hideHeader);
         manageVisibility(SEL.fixed, hideFixedMsg);
         manageVisibility(SEL.ranking, blockRanking);
         manageVisibility(SEL.mission, blockMission);
