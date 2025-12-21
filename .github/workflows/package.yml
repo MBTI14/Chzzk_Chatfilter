@@ -11,9 +11,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Create Zip File
-        run: |
-          zip -r extension.zip . -x "*.git*" "*.github*" ".DS_Store" "README.md"
+        run: zip -r Chzzk_Chatfilter.zip . -x "*.git*" "*.github*" ".DS_Store" "README.md"
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: extension.zip
+          files: Chzzk_Chatfilter.zip
