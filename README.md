@@ -1,4 +1,4 @@
-**Fix**
+<img width="217" height="88" alt="image" src="https://github.com/user-attachments/assets/9c231bd5-8bad-46e9-9323-ee3193d7663a" />**Fix**
 - (2025.12.19) 후원 메시지 숨김 기능 먹통 수정
 - (2025.12.21) 상단 채팅 바 숨김 기능 추가
 
@@ -7,8 +7,11 @@
 - 치지직 채팅창을 관리하는 크로미움 엔진 기반 브라우저의 확장 프로그램입니다.
 
 **설치 방법**
-1. 우측 `Releases`를 클릭하세요.
-2. `Chzzk_Chatfilter.zip` 을 다운로드 하고 아무데나 압축을 푸세요.
+1. 사이트 우측에 있는 `Releases`를 클릭하세요.
+
+   <img width="217" height="88" alt="image" src="https://github.com/user-attachments/assets/52a26d69-6596-47fb-aeca-477afd83f849" />
+
+3. `Chzzk_Chatfilter.zip` 을 다운로드 하고 아무데나 압축을 푸세요.
 4. 크롬 브라우저 주소창에 `chrome://extensions/` 을 입력하여 `확장 프로그램 관리` 창으로 이동하세요.
 5. 우측 상단의 `개발자 모드`를 켜세요.
 6. 좌측 상단의 `압축해제된 확장 프로그램 로드` 를 클릭하세요.
