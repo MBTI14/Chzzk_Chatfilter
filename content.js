@@ -1,11 +1,11 @@
 (function() {
     'use strict';
     const SEL = {
-        item: '[class*="live_chatting_list_item"], [class*="vod_chatting_item"]',
+        item: '[class*="live_chatting_list_item"], [class*="vod_chatting_item"], [class*="live_chatting_message_chatting_message"]',
         guide: '[class*="live_chatting_guide_container"]',
         fixed: '[class*="live_chatting_fixed_wrapper"]',
         header: '[class*="live_chatting_header_"]',
-        donation: '[class*="live_chatting_donation_"]',
+        donation: '[class*="live_chatting_donation_message_container"]',
         ranking: '[class*="live_chatting_ranking_container"]',
         mission: '[class*="live_chatting_mission_message_wrapper"], [class*="live_chatting_fixed_mission_header"]',
         prediction: '[class*="live_chatting_prediction_"], [class*="live_chatting_vote_"], [class*="live_chatting_fixed_prediction_"]',
@@ -17,7 +17,7 @@
         container: '[class*="live_chatting_content"], [class*="vod_chatting_list"], [class*="live_chatting_list_wrapper"]'
     };
     
-    let currentKeywords = [], isEnabled = true, hideHeader = false, hideFixedMsg = false, blockDonation = false, blockRanking = false, blockMission = false, blockLog = false, blockMethod = 'remove', isReady = false;
+    let currentKeywords = [], keywordRegex = null, isEnabled = true, hideHeader = false, hideFixedMsg = false, blockDonation = false, blockRanking = false, blockMission = false, blockLog = false, blockMethod = 'remove', isReady = false;
 
     document.addEventListener('contextmenu', (e) => {
         if (e.target.matches(SEL.nickname)) {
@@ -28,6 +28,53 @@
             selection.addRange(range);
         }
     }, true);
+
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function updateRegex() {
+        if (currentKeywords.length === 0) {
+            keywordRegex = null;
+        } else {
+            try {
+                const pattern = currentKeywords.map(escapeRegExp).join('|');
+                keywordRegex = new RegExp(pattern);
+            } catch (e) {
+                keywordRegex = null;
+            }
+        }
+    }
+
+    function runInitialPatrol() {
+        if (!isReady) return;
+        manageVisibility(SEL.header, hideHeader);
+        manageVisibility(SEL.ranking, blockRanking);
+        if (isEnabled) {
+            document.querySelectorAll(SEL.guide).forEach(node => {
+                if (node.style.display !== 'none') removeElement(node);
+            });
+        }
+    }
+
+    function runDynamicPatrol() {
+        if (!isReady) return;
+        manageVisibility(SEL.fixed, hideFixedMsg);
+        manageVisibility(SEL.mission, blockMission);
+        manageVisibility(SEL.prediction, blockLog);
+        manageVisibility(SEL.header, hideHeader);
+        manageVisibility(SEL.ranking, blockRanking);
+    }
+
+    function manageVisibility(selector, shouldHide) {
+        document.querySelectorAll(selector).forEach(node => {
+            if (shouldHide) {
+                if (node.style.display !== 'none') node.style.display = 'none';
+            } else {
+                if (node.style.display === 'none') node.style.display = '';
+            }
+        });
+    }
 
     function initSettings() {
         chrome.storage.local.get(['isFilterEnabled', 'hideHeader', 'hideFixedMsg', 'blockDonation', 'blockRanking', 'blockMission', 'blockLog', 'bannedKeywords', 'blockMethod'], (data) => {
@@ -40,30 +87,35 @@
             blockLog = data.blockLog === true;
             blockMethod = data.blockMethod || 'remove';
             currentKeywords = data.bannedKeywords || [];
+            updateRegex();
+
             if (!data.bannedKeywords) chrome.storage.local.set({ bannedKeywords: [] });
             isReady = true;
+            runInitialPatrol();
             reprocessAllChats();
         });
     }
 
     chrome.storage.onChanged.addListener((changes) => {
-        let needReprocess = false, updatePatrol = false;
+        let needReprocess = false;
         if (changes.isFilterEnabled) { isEnabled = changes.isFilterEnabled.newValue; needReprocess = true; }
         if (changes.blockDonation) { blockDonation = changes.blockDonation.newValue; needReprocess = true; }
-        if (changes.bannedKeywords) { currentKeywords = changes.bannedKeywords.newValue || []; needReprocess = true; }
+        if (changes.bannedKeywords) { 
+            currentKeywords = changes.bannedKeywords.newValue || []; 
+            updateRegex();
+            needReprocess = true; 
+        }
         if (changes.blockMethod) { blockMethod = changes.blockMethod.newValue; needReprocess = true; }
-        if (changes.hideHeader) { hideHeader = changes.hideHeader.newValue; updatePatrol = true; }
-        if (changes.hideFixedMsg) { hideFixedMsg = changes.hideFixedMsg.newValue; updatePatrol = true; }
-        if (changes.blockRanking) { blockRanking = changes.blockRanking.newValue; updatePatrol = true; }
-        if (changes.blockMission) { blockMission = changes.blockMission.newValue; updatePatrol = true; }
-        if (changes.blockLog) { blockLog = changes.blockLog.newValue; updatePatrol = true; }
-        if (updatePatrol) runPatrol();
+        if (changes.hideHeader) { hideHeader = changes.hideHeader.newValue; runInitialPatrol(); }
+        if (changes.hideFixedMsg) { hideFixedMsg = changes.hideFixedMsg.newValue; runDynamicPatrol(); }
+        if (changes.blockRanking) { blockRanking = changes.blockRanking.newValue; runInitialPatrol(); }
+        if (changes.blockMission) { blockMission = changes.blockMission.newValue; runDynamicPatrol(); }
+        if (changes.blockLog) { blockLog = changes.blockLog.newValue; runDynamicPatrol(); }
         if (needReprocess) reprocessAllChats();
     });
 
     function reprocessAllChats() {
         if (!isReady) return;
-        runPatrol();
         document.querySelectorAll(`${SEL.item}, ${SEL.guide}, ${SEL.donation}`).forEach(node => {
             delete node.dataset.processed;
             node.style.cssText = ''; node.style.display = ''; node.style.opacity = ''; node.style.height = '';
@@ -81,45 +133,22 @@
             node.querySelectorAll(SEL.image).forEach(img => img.style.display = '');
             filterChat(node);
         });
-    }
-
-    function runPatrol() {
-        if (!isReady) return;
-        manageVisibility(SEL.header, hideHeader);
-        manageVisibility(SEL.fixed, hideFixedMsg);
-        manageVisibility(SEL.ranking, blockRanking);
-        manageVisibility(SEL.mission, blockMission);
-        manageVisibility(SEL.prediction, blockLog);
-        if (isEnabled) {
-            document.querySelectorAll(SEL.guide).forEach(node => {
-                if (node.style.display !== 'none') removeElement(node);
-            });
-        }
-    }
-
-    function manageVisibility(selector, shouldHide) {
-        document.querySelectorAll(selector).forEach(node => {
-            if (shouldHide) { if (node.style.display !== 'none') node.style.display = 'none'; }
-            else { if (node.style.display === 'none') node.style.display = ''; }
-        });
+        runInitialPatrol();
+        runDynamicPatrol();
     }
 
     function filterChat(node) {
         if (!isReady || node.dataset.processed) return;
-        
         const isTarget = isEnabled || blockDonation || hideFixedMsg || blockRanking || blockMission || blockLog;
         if (!isTarget) return;
-
         node.dataset.processed = 'true';
 
         if (node.nodeType === 1 && node.matches(SEL.donation)) { 
             if (blockDonation) { removeElement(node); return; }
         }
-        
         if (node.nodeType === 1 && node.matches(SEL.guide)) { if (isEnabled) removeElement(node); return; }
 
         if (node.nodeType === 1 && node.matches(SEL.item)) {
-            
             if (blockDonation && node.querySelector(SEL.donation)) { removeElement(node); return; }
             if (hideFixedMsg && node.querySelector(SEL.fixed)) { removeElement(node); return; }
             if (blockRanking && node.querySelector(SEL.ranking)) { removeElement(node); return; }
@@ -132,18 +161,21 @@
             const textNode = node.querySelector(SEL.text);
             const contentToCheck = textNode ? (textNode.dataset.originalText || textNode.textContent) : '';
 
-            if (contentToCheck && currentKeywords.some(k => contentToCheck.includes(k))) shouldBlock = true;
+            if (contentToCheck && keywordRegex && keywordRegex.test(contentToCheck)) shouldBlock = true;
+            
             if (!shouldBlock) {
                 const nameNode = node.querySelector(SEL.nickname);
-                if (nameNode && currentKeywords.some(k => nameNode.textContent.includes(k))) shouldBlock = true;
+                if (nameNode && keywordRegex && keywordRegex.test(nameNode.textContent)) shouldBlock = true;
             }
+            
             if (!shouldBlock && currentKeywords.length > 0) {
                 const images = node.querySelectorAll(SEL.image);
                 for (let img of images) {
                     if (img.closest(SEL.badge)) continue;
-                    if (currentKeywords.some(k => (img.src || '').includes(k))) { shouldBlock = true; break; }
+                    if (keywordRegex && keywordRegex.test(img.src || '')) { shouldBlock = true; break; }
                 }
             }
+            
             if (shouldBlock) {
                 if (blockMethod === 'remove') removeElement(node);
                 else if (blockMethod === 'text-only') replaceElement(node, true);
@@ -198,8 +230,16 @@
     const chatObserver = new MutationObserver((mutations) => {
         mutations.forEach(m => m.addedNodes.forEach(node => {
             if (node.nodeType === 1) {
-                filterChat(node); tryCollectPower(node);
-                if (node.matches && (node.matches(SEL.fixed) || node.matches(SEL.ranking) || node.matches(SEL.mission) || node.matches(SEL.prediction))) runPatrol();
+                filterChat(node);
+                tryCollectPower(node);
+                
+                if (node.matches(SEL.fixed) && hideFixedMsg) removeElement(node);
+                if (node.matches(SEL.mission) && blockMission) removeElement(node);
+                if (node.matches(SEL.prediction) && blockLog) removeElement(node);
+                
+                if (node.matches(SEL.header) && hideHeader) node.style.display = 'none';
+                if (node.matches(SEL.ranking) && blockRanking) node.style.display = 'none';
+                if (node.matches(SEL.guide) && isEnabled) removeElement(node);
             }
         }));
     });
@@ -209,8 +249,6 @@
         if (target) {
             chatObserver.observe(target, { childList: true, subtree: true });
             initSettings();
-            runPatrol();
-            setInterval(runPatrol, 1000);
         } else setTimeout(startObserving, 1000);
     }
 

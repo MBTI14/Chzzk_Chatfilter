@@ -23,8 +23,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         const src = info.srcUrl;
         let keyword = src;
         try {
-            keyword = src.split('/').pop().split('.')[0];
+            const urlObj = new URL(src);
+            const pathname = urlObj.pathname;
+            const filename = pathname.substring(pathname.lastIndexOf('/') + 1);
+            keyword = filename.split('.')[0];
         } catch (err) {}
+        
+        if (!keyword) keyword = src;
+        
         addKeywordToStorage(keyword, src, false);
     }
 });
