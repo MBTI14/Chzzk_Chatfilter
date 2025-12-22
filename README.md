@@ -1,7 +1,6 @@
-<img width="217" height="88" alt="image" src="https://github.com/user-attachments/assets/9c231bd5-8bad-46e9-9323-ee3193d7663a" />**Fix**
+**업데이트**
 - (2025.12.19) 후원 메시지 숨김 기능 먹통 수정
 - (2025.12.21) 상단 채팅 바 숨김 기능 추가
-
 
 **소개**
 - 치지직 채팅창을 관리하는 크로미움 엔진 기반 브라우저의 확장 프로그램입니다.
