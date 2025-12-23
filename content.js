@@ -4,7 +4,7 @@
         item: '[class*="live_chatting_list_item"], [class*="vod_chatting_item"], [class*="live_chatting_message_chatting_message"]',
         guide: '[class*="live_chatting_guide_container"]',
         fixed: '[class*="live_chatting_fixed_wrapper"]',
-        header: '[class*="live_chatting_header_"]',
+        header: '[class*="live_chatting_header_"], [class*="vod_chatting_header_"]',
         donation: '[class*="live_chatting_donation_message_container"]',
         ranking: '[class*="live_chatting_ranking_container"]',
         mission: '[class*="live_chatting_mission_message_wrapper"], [class*="live_chatting_fixed_mission_header"]',
